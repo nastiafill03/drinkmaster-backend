@@ -1,0 +1,200 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "DrinkMaster API",
+    "version": "1.0.0",
+    "description": "REST API для застосунку DrinkMaster"
+  },
+  "servers": [
+    { "url": "http://localhost:3001", "description": "Local" },
+    { "url": "https://твій-сервер.onrender.com", "description": "Production" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "name":      { "type": "string" },
+          "email":     { "type": "string" },
+          "avatarURL": { "type": "string" },
+          "birthDate": { "type": "string" }
+        }
+      },
+      "Drink": {
+        "type": "object",
+        "properties": {
+          "_id":          { "type": "string" },
+          "drink":        { "type": "string" },
+          "category":     { "type": "string" },
+          "alcoholic":    { "type": "string" },
+          "glass":        { "type": "string" },
+          "description":  { "type": "string" },
+          "instructions": { "type": "string" },
+          "drinkThumb":   { "type": "string" },
+          "ingredients":  { "type": "array" }
+        }
+      }
+    }
+  },
+  "paths": {
+
+    "/auth/signup": {
+      "post": {
+        "tags": ["Auth"], "summary": "Реєстрація",
+        "requestBody": { "required": true, "content": { "application/json": {
+          "schema": { "type": "object", "required": ["name","email","password"],
+            "properties": { "name":{"type":"string"}, "email":{"type":"string"}, "password":{"type":"string"} }
+          }}}},
+        "responses": { "201": {"description":"Створено"}, "409": {"description":"Email вже існує"} }
+      }
+    },
+    "/auth/signin": {
+      "post": {
+        "tags": ["Auth"], "summary": "Логін",
+        "requestBody": { "required": true, "content": { "application/json": {
+          "schema": { "type": "object", "required": ["email","password"],
+            "properties": { "email":{"type":"string"}, "password":{"type":"string"} }
+          }}}},
+        "responses": { "200":{"description":"OK + token"}, "401":{"description":"Невірні дані"} }
+      }
+    },
+    "/auth/signout": {
+      "post": {
+        "tags": ["Auth"], "summary": "Логаут",
+        "security": [{"bearerAuth":[]}],
+        "responses": { "204":{"description":"Вихід успішний"}, "401":{"description":"Не авторизований"} }
+      }
+    },
+
+    "/users/current": {
+      "get": {
+        "tags": ["Users"], "summary": "Дані поточного юзера",
+        "security": [{"bearerAuth":[]}],
+        "responses": { "200":{"description":"Дані юзера"}, "401":{"description":"Не авторизований"} }
+      }
+    },
+    "/users/update": {
+      "patch": {
+        "tags": ["Users"], "summary": "Оновлення профілю",
+        "security": [{"bearerAuth":[]}],
+        "requestBody": { "content": { "multipart/form-data": {
+          "schema": { "type": "object", "properties": {
+            "name":      {"type":"string"},
+            "birthDate": {"type":"string"},
+            "avatar":    {"type":"string","format":"binary"}
+          }}}}},
+        "responses": { "200":{"description":"Оновлено"}, "401":{"description":"Не авторизований"} }
+      }
+    },
+    "/users/subscribe": {
+      "post": {
+        "tags": ["Users"], "summary": "Підписка на розсилку",
+        "security": [{"bearerAuth":[]}],
+        "requestBody": { "required": true, "content": { "application/json": {
+          "schema": { "type":"object", "properties": { "email":{"type":"string"} } }}}},
+        "responses": { "200":{"description":"Підписано"} }
+      }
+    },
+
+    "/filters/categories": {
+      "get": { "tags":["Filters"], "summary":"Список категорій",
+        "security":[{"bearerAuth":[]}],
+        "responses":{"200":{"description":"Масив рядків"}} }
+    },
+    "/filters/ingredients": {
+      "get": { "tags":["Filters"], "summary":"Список інгредієнтів",
+        "security":[{"bearerAuth":[]}],
+        "responses":{"200":{"description":"Масив рядків"}} }
+    },
+    "/filters/glasses": {
+      "get": { "tags":["Filters"], "summary":"Список бокалів",
+        "security":[{"bearerAuth":[]}],
+        "responses":{"200":{"description":"Масив рядків"}} }
+    },
+
+    "/drinks/mainpage": {
+      "get": { "tags":["Drinks"], "summary":"Коктейлі для головної сторінки",
+        "security":[{"bearerAuth":[]}],
+        "responses":{"200":{"description":"Масив категорій з коктейлями"}} }
+    },
+    "/drinks/popular": {
+      "get": { "tags":["Drinks"], "summary":"Популярні коктейлі",
+        "security":[{"bearerAuth":[]}],
+        "responses":{"200":{"description":"Масив коктейлів"}} }
+    },
+    "/drinks/search": {
+      "get": { "tags":["Drinks"], "summary":"Пошук коктейлів",
+        "security":[{"bearerAuth":[]}],
+        "parameters": [
+          {"name":"keyword","in":"query","schema":{"type":"string"}},
+          {"name":"category","in":"query","schema":{"type":"string"}},
+          {"name":"ingredient","in":"query","schema":{"type":"string"}},
+          {"name":"page","in":"query","schema":{"type":"integer","default":1}},
+          {"name":"limit","in":"query","schema":{"type":"integer","default":9}}
+        ],
+        "responses":{"200":{"description":"drinks + total + page + totalPages"}} }
+    },
+    "/drinks/own": {
+      "get": { "tags":["Drinks"], "summary":"Власні коктейлі",
+        "security":[{"bearerAuth":[]}],
+        "parameters": [
+          {"name":"page","in":"query","schema":{"type":"integer"}},
+          {"name":"limit","in":"query","schema":{"type":"integer"}}
+        ],
+        "responses":{"200":{"description":"drinks + total + totalPages"}} }
+    },
+    "/drinks/own/add": {
+      "post": { "tags":["Drinks"], "summary":"Додати власний коктейль",
+        "security":[{"bearerAuth":[]}],
+        "requestBody": { "required":true, "content": { "multipart/form-data": {
+          "schema": { "type":"object",
+            "required":["drink","description","category","glass","alcoholic","instructions","ingredients"],
+            "properties": {
+              "drink":        {"type":"string"},
+              "description":  {"type":"string"},
+              "category":     {"type":"string"},
+              "glass":        {"type":"string"},
+              "alcoholic":    {"type":"string","enum":["Alcoholic","Non alcoholic"]},
+              "instructions": {"type":"string"},
+              "ingredients":  {"type":"string","description":"JSON-рядок масиву"},
+              "drinkThumb":   {"type":"string","format":"binary"}
+            }}}}},
+        "responses":{"201":{"description":"Коктейль створено"},"403":{"description":"Не повнолітній"}} }
+    },
+    "/drinks/own/remove": {
+      "delete": { "tags":["Drinks"], "summary":"Видалити власний коктейль",
+        "security":[{"bearerAuth":[]}],
+        "requestBody": { "required":true, "content": { "application/json": {
+          "schema": {"type":"object","properties":{"drinkId":{"type":"string"}}}}}},
+        "responses":{"200":{"description":"Видалено"},"404":{"description":"Не знайдено"}} }
+    },
+    "/drinks/favorite": {
+      "get": { "tags":["Drinks"], "summary":"Улюблені коктейлі",
+        "security":[{"bearerAuth":[]}],
+        "responses":{"200":{"description":"drinks + total + totalPages"}} }
+    },
+    "/drinks/favorite/add": {
+      "post": { "tags":["Drinks"], "summary":"Додати до улюблених",
+        "security":[{"bearerAuth":[]}],
+        "requestBody": { "required":true, "content": { "application/json": {
+          "schema": {"type":"object","properties":{"drinkId":{"type":"string"}}}}}},
+        "responses":{"200":{"description":"OK"},"404":{"description":"Не знайдено"}} }
+    },
+    "/drinks/favorite/remove": {
+      "delete": { "tags":["Drinks"], "summary":"Видалити з улюблених",
+        "security":[{"bearerAuth":[]}],
+        "requestBody": { "required":true, "content": { "application/json": {
+          "schema": {"type":"object","properties":{"drinkId":{"type":"string"}}}}}},
+        "responses":{"200":{"description":"OK"},"404":{"description":"Не знайдено"}} }
+    },
+    "/drinks/{drinkId}": {
+      "get": { "tags":["Drinks"], "summary":"Один коктейль по ID",
+        "security":[{"bearerAuth":[]}],
+        "parameters":[{"name":"drinkId","in":"path","required":true,"schema":{"type":"string"}}],
+        "responses":{"200":{"description":"Об\"єкт коктейлю"},"404":{"description":"Не знайдено"}} }
+    }
+  }
+}
